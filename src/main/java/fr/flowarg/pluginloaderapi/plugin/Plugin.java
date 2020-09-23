@@ -1,5 +1,7 @@
 package fr.flowarg.pluginloaderapi.plugin;
 
+import fr.flowarg.pluginloaderapi.api.IAPI;
+
 import java.io.File;
 import java.util.jar.JarFile;
 
@@ -12,6 +14,7 @@ public abstract class Plugin
     private String pluginName;
     private String version;
     private PluginLogger logger;
+    private IAPI api;
 
     public abstract void onStart();
     public abstract void onStop();
@@ -51,6 +54,11 @@ public abstract class Plugin
         return this.logger;
     }
 
+    public final IAPI getApi()
+    {
+        return this.api;
+    }
+
     final void setPluginFile(File pluginFile)
     {
         this.pluginFile = pluginFile;
@@ -83,8 +91,13 @@ public abstract class Plugin
         this.jarFile = jarFile;
     }
 
-    void setLogger(PluginLogger logger)
+    final void setLogger(PluginLogger logger)
     {
         this.logger = logger;
+    }
+
+    final void setApi(IAPI api)
+    {
+        this.api = api;
     }
 }

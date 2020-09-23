@@ -3,6 +3,7 @@ package fr.flowarg.pluginloaderapi.plugin;
 import fr.flowarg.flowio.FileUtils;
 import fr.flowarg.flowlogger.ILogger;
 import fr.flowarg.pluginloaderapi.PluginLoaderAPI;
+import fr.flowarg.pluginloaderapi.api.IAPI;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -24,6 +25,7 @@ public class PluginLoader
     private final Class<?> registeredClass;
     private final List<Plugin> loadedPlugins = new ArrayList<>();
     private final ILogger logger = PluginLoaderAPI.getLogger();
+    private final IAPI api;
     private boolean loaded;
 
     public PluginLoader(String name, File pluginsDir, Class<?> registeredClass)
@@ -32,6 +34,16 @@ public class PluginLoader
         this.pluginsDir = pluginsDir;
         this.registeredClass = registeredClass;
         this.loaded = false;
+        this.api = IAPI.DEFAULT;
+    }
+
+    public PluginLoader(String name, File pluginsDir, Class<?> registeredClass, IAPI api)
+    {
+        this.name = name;
+        this.pluginsDir = pluginsDir;
+        this.registeredClass = registeredClass;
+        this.loaded = false;
+        this.api = api;
     }
 
     public void loadPlugins()
@@ -127,6 +139,7 @@ public class PluginLoader
         chargingPlugin.setDataPluginFolder(new File(plugin.getAbsolutePath().replace(".jar", "")));
         chargingPlugin.setVersion(manifest.getVersion());
         chargingPlugin.setJarFile(jarFile);
+        chargingPlugin.setApi(this.api);
         chargingPlugin.setLogger(new PluginLogger(chargingPlugin.getPluginName(), this.logger.getPrefix()));
         chargingPlugin.onStart();
         this.loadedPlugins.add(chargingPlugin);
@@ -197,5 +210,10 @@ public class PluginLoader
     public String toString()
     {
         return this.name;
+    }
+
+    public IAPI getApi()
+    {
+        return this.api;
     }
 }
