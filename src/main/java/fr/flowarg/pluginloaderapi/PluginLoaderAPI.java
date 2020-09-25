@@ -6,26 +6,30 @@ import fr.flowarg.flowlogger.ILogger;
 import fr.flowarg.flowlogger.Logger;
 import fr.flowarg.pluginloaderapi.plugin.PluginLoader;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 public class PluginLoaderAPI
 {
     private PluginLoaderAPI() { throw new UnsupportedOperationException(); }
 
-    static
-    {
-        Runtime.getRuntime().addShutdownHook(new Thread(PluginLoaderAPI::shutdown));
-    }
-
     private static final List<PluginLoader> PLUGIN_LOADERS = new ArrayList<>();
     private static final List<Class<?>> READY_CLASSES = new ArrayList<>();
     private static final List<Class<?>> AWAIT_READY = new ArrayList<>();
-    private static final ILogger LOGGER = new APILogger();
+    private static final ILogger LOGGER = new Logger("[PluginLoaderAPI]", null);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
+    private static final Scanner SCANNER = new Scanner(System.in);
+    private static final Predicate<List<PluginLoader>> DEFAULT_SHUTDOWN_TRIGGER = pluginLoaders -> SCANNER.nextLine().equalsIgnoreCase("stop");
+    private static final List<Predicate<List<PluginLoader>>> SHUTDOWN_TRIGGERS = new ArrayList<>();
+
+    static
+    {
+        Runtime.getRuntime().addShutdownHook(new Thread(PluginLoaderAPI::shutdown));
+        SHUTDOWN_TRIGGERS.add(0, DEFAULT_SHUTDOWN_TRIGGER);
+    }
 
     public static Task<PluginLoader> registerPluginLoader(PluginLoader pluginLoader)
     {
@@ -68,13 +72,18 @@ public class PluginLoaderAPI
 
     private static void shutdown()
     {
-        final Scanner scanner = new Scanner(System.in);
-        String command;
-        do
-        {
-            command = scanner.nextLine();
-        }while (!command.equalsIgnoreCase("stop"));
-        scanner.close();
+        final AtomicBoolean flag = new AtomicBoolean(true);
+
+        do {
+            flag.set(true);
+            SHUTDOWN_TRIGGERS.forEach(listPredicate -> {
+                if(!flag.get()) return;
+                final boolean temp = listPredicate.test(PLUGIN_LOADERS);
+                flag.set(temp);
+            });
+        }
+        while (!flag.get()) ;
+
         LOGGER.info("Shutting down PluginLoaderAPI.");
         int lgt = PLUGIN_LOADERS.size();
         for (int i = 0; i < lgt; lgt--)
@@ -119,19 +128,25 @@ public class PluginLoaderAPI
         return GSON;
     }
 
-    private static class APILogger extends Logger
+    public static Scanner getScanner()
     {
-        public APILogger()
-        {
-            super("[PluginLoaderAPI]", null);
-        }
+        return SCANNER;
+    }
 
-        @Override
-        public void debug(String message)
-        {
-            final String date = String.format("[%s] ", new SimpleDateFormat("hh:mm:ss").format(new Date()));
-            final String msg = EnumLogColor.CYAN.getColor() + date + this.getPrefix() + "[DEBUG] " + message + EnumLogColor.RESET.getColor();
-            System.out.println(msg);
-        }
+    public static Task<Predicate<List<PluginLoader>>> addShutdownTrigger(Predicate<List<PluginLoader>> shutdownTrigger)
+    {
+        return new Task<>(shutdownTrigger, SHUTDOWN_TRIGGERS::add);
+    }
+
+    public static Task<Void> removeDefaultShutdownTrigger()
+    {
+        return new Task<>(null, unused -> {
+            for (int i = 0; i < SHUTDOWN_TRIGGERS.size(); i++)
+            {
+                if(SHUTDOWN_TRIGGERS.get(i).equals(DEFAULT_SHUTDOWN_TRIGGER))
+                    SHUTDOWN_TRIGGERS.remove(i);
+            }
+            return true;
+        });
     }
 }
