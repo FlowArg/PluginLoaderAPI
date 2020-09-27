@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import fr.flowarg.flowlogger.ILogger;
 import fr.flowarg.flowlogger.Logger;
+import fr.flowarg.pluginloaderapi.api.LoggerActionType;
+import fr.flowarg.pluginloaderapi.api.Task;
 import fr.flowarg.pluginloaderapi.plugin.PluginLoader;
 
 import java.util.ArrayList;
@@ -59,7 +61,7 @@ public class PluginLoaderAPI
             if(!AWAIT_READY.contains(plLoader.getRegisteredClass()))
                 AWAIT_READY.add(plLoader.getRegisteredClass());
             return true;
-        }, () -> LOGGER.debug(String.format("Registering %s plugin loader.", pluginLoader.getName())));
+        }, () -> LOGGER.debug(String.format("Registering %s plugin loader.", pluginLoader.getName())), LoggerActionType.BEFORE);
     }
 
     private static Task<PluginLoader> unregisterPluginLoader(PluginLoader pluginLoader)
@@ -67,7 +69,7 @@ public class PluginLoaderAPI
         return new Task<>(pluginLoader, plLoader -> {
             PLUGIN_LOADERS.remove(plLoader);
             return true;
-        }, () -> LOGGER.debug(String.format("Unregistering %s plugin loader.", pluginLoader.getName())));
+        }, () -> LOGGER.debug(String.format("Unregistering %s plugin loader.", pluginLoader.getName())), LoggerActionType.BEFORE);
     }
 
     private static void shutdown()
