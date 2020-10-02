@@ -2,7 +2,6 @@ package fr.flowarg.pluginloaderapi.plugin;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import fr.flowarg.flowio.FileUtils;
 import fr.flowarg.flowlogger.ILogger;
 import fr.flowarg.pluginloaderapi.PluginLoaderAPI;
@@ -227,9 +226,9 @@ public class PluginLoader implements JsonSerializable
         result.add("pluginsDir", JsonUtils.toJson(this.pluginsDir));
         result.addProperty("registeredClass", this.registeredClass.getName());
         final JsonArray array = new JsonArray(this.loadedPlugins.size());
-        this.loadedPlugins.forEach(plugin -> array.add(JsonParser.parseString(plugin.toJson())));
+        this.loadedPlugins.forEach(plugin -> array.add(JsonUtils.toJson(plugin)));
         result.add("loadedPlugins", array);
-        result.add("api", JsonParser.parseString(this.api.toJson()));
+        result.add("api", JsonUtils.toJson(this.api));
         result.addProperty("loaded", this.loaded);
 
         return result.toString();

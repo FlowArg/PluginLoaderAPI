@@ -1,7 +1,6 @@
 package fr.flowarg.pluginloaderapi.plugin;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import fr.flowarg.pluginloaderapi.api.IAPI;
 import fr.flowarg.pluginloaderapi.api.JsonSerializable;
 import fr.flowarg.pluginloaderapi.api.JsonUtils;
@@ -102,7 +101,7 @@ public abstract class Plugin implements JsonSerializable
         result.addProperty("pluginLoader", this.pluginLoader.getName());
         result.addProperty("pluginName", this.pluginName);
         result.addProperty("version", this.version);
-        result.add("api", JsonParser.parseString(this.api.toJson()));
+        result.add("api", JsonUtils.toJson(this.api));
         return result.toString();
     }
 }
