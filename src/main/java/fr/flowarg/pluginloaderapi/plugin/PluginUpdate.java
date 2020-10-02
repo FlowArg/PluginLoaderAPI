@@ -1,6 +1,9 @@
 package fr.flowarg.pluginloaderapi.plugin;
 
-public class PluginUpdate
+import fr.flowarg.pluginloaderapi.PluginLoaderAPI;
+import fr.flowarg.pluginloaderapi.api.JsonSerializable;
+
+public class PluginUpdate implements JsonSerializable
 {
     private String jarUrl;
     private String crc32Url;
@@ -19,5 +22,11 @@ public class PluginUpdate
     public boolean isIgnore()
     {
         return this.ignore;
+    }
+
+    @Override
+    public String toJson()
+    {
+        return PluginLoaderAPI.getGson().toJson(this);
     }
 }

@@ -1,5 +1,6 @@
 package fr.flowarg.sampleimplentation;
 
+import com.google.gson.JsonObject;
 import fr.flowarg.pluginloaderapi.api.IAPI;
 
 import java.util.UUID;
@@ -22,5 +23,16 @@ public class APIImplementation implements IAPI
     public String getRandomUUID()
     {
         return this.randomUUID;
+    }
+
+    @Override
+    public String toJson()
+    {
+        final JsonObject result = new JsonObject();
+
+        result.addProperty("name", this.getAPIName());
+        result.addProperty("randomUUID", this.randomUUID);
+
+        return result.toString();
     }
 }

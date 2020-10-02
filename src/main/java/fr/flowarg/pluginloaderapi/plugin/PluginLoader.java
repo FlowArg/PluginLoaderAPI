@@ -1,9 +1,14 @@
 package fr.flowarg.pluginloaderapi.plugin;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import fr.flowarg.flowio.FileUtils;
 import fr.flowarg.flowlogger.ILogger;
 import fr.flowarg.pluginloaderapi.PluginLoaderAPI;
 import fr.flowarg.pluginloaderapi.api.IAPI;
+import fr.flowarg.pluginloaderapi.api.JsonSerializable;
+import fr.flowarg.pluginloaderapi.api.JsonUtils;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -18,13 +23,13 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class PluginLoader
+public class PluginLoader implements JsonSerializable
 {
     private final String name;
     private final File pluginsDir;
     private final Class<?> registeredClass;
     private final List<Plugin> loadedPlugins = new ArrayList<>();
-    private final ILogger logger = PluginLoaderAPI.getLogger();
+    private final transient ILogger logger = PluginLoaderAPI.getLogger();
     private final IAPI api;
     private boolean loaded;
 
@@ -49,31 +54,31 @@ public class PluginLoader
     public void loadPlugins()
     {
         final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        if(!elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI"))
+        if (!elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI"))
         {
             this.logger.err(String.format("'Loading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
             return;
         }
-        if(!this.loaded)
+        if (!this.loaded)
         {
             this.logger.info("Searching for plugins in : " + pluginsDir.getAbsolutePath() + ".");
-            if(this.pluginsDir.listFiles() != null && this.pluginsDir.listFiles().length > 0)
+            if (this.pluginsDir.listFiles() != null && this.pluginsDir.listFiles().length > 0)
             {
                 for (File plugin : this.pluginsDir.listFiles())
                 {
-                    if(!plugin.isDirectory())
+                    if (!plugin.isDirectory())
                     {
                         try
                         {
                             final JarFile jarFile = new JarFile(plugin, false, ZipFile.OPEN_READ);
                             final ZipEntry entryManifest = jarFile.getEntry("manifest.json");
-                            if(entryManifest != null)
+                            if (entryManifest != null)
                             {
                                 new Thread(() -> {
                                     try
                                     {
                                         this.checkForUpdates(plugin);
-                                        this.launchPlugin(this.addPluginToClassLoader(jarFile, entryManifest, plugin), plugin, jarFile);
+                                        this.launchPlugin(this.addPluginToClassLoader(jarFile, entryManifest, plugin), plugin);
                                     } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException | IOException e)
                                     {
                                         this.logger.printStackTrace(e);
@@ -96,20 +101,20 @@ public class PluginLoader
     {
         final File dir = new File(plugin.getAbsolutePath().replace(".jar", ""));
         boolean flag = false;
-        if(dir.listFiles() != null && dir.listFiles().length > 0)
+        if (dir.listFiles() != null && dir.listFiles().length > 0)
         {
             for (File file : dir.listFiles())
             {
-                if(file.getName().equals("update.json"))
+                if (file.getName().equals("update.json"))
                 {
                     final String jsonUpdate = FileUtils.loadFile(file);
                     final PluginUpdate update = PluginLoaderAPI.getGson().fromJson(jsonUpdate, PluginUpdate.class);
-                    if(!update.isIgnore())
+                    if (!update.isIgnore())
                     {
                         final String crc32Url = update.getCrc32Url();
-                        if(crc32Url != null && !crc32Url.trim().equals(""))
+                        if (crc32Url != null && !crc32Url.trim().equals(""))
                         {
-                            if(this.getContentFromIS(new URL(update.getCrc32Url()).openStream()).equalsIgnoreCase(Long.toString(FileUtils.getCRC32(plugin))))
+                            if (this.getContentFromIS(new URL(update.getCrc32Url()).openStream()).equalsIgnoreCase(Long.toString(FileUtils.getCRC32(plugin))))
                                 this.logger.info("No update found for: " + plugin.getName());
                             else
                             {
@@ -125,11 +130,10 @@ public class PluginLoader
             }
         }
         else flag = true;
-        if (flag)
-            this.logger.warn("No update.json found for: " + plugin.getName());
+        if (flag) this.logger.warn("No update.json found for: " + plugin.getName());
     }
-    
-    private void launchPlugin(PluginManifest manifest, File plugin, JarFile jarFile) throws ClassNotFoundException, IllegalAccessException, InstantiationException
+
+    private void launchPlugin(PluginManifest manifest, File plugin) throws ClassNotFoundException, IllegalAccessException, InstantiationException
     {
         final Class<?> pluginClass = Class.forName(manifest.getPluginClass());
         final Plugin chargingPlugin = (Plugin)pluginClass.newInstance();
@@ -138,13 +142,12 @@ public class PluginLoader
         chargingPlugin.setPluginName(manifest.getName());
         chargingPlugin.setDataPluginFolder(new File(plugin.getAbsolutePath().replace(".jar", "")));
         chargingPlugin.setVersion(manifest.getVersion());
-        chargingPlugin.setJarFile(jarFile);
         chargingPlugin.setApi(this.api);
         chargingPlugin.setLogger(new PluginLogger(chargingPlugin.getPluginName(), this.logger.getPrefix()));
         chargingPlugin.onStart();
         this.loadedPlugins.add(chargingPlugin);
     }
-    
+
     private PluginManifest addPluginToClassLoader(JarFile jarFile, ZipEntry entryManifest, File plugin) throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException
     {
         final PluginManifest manifest = this.getPluginManifest(jarFile, entryManifest);
@@ -168,21 +171,19 @@ public class PluginLoader
         final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         final StringBuilder sb = new StringBuilder();
         String line;
-        while ((line = reader.readLine()) != null)
-            sb.append(line);
+        while ((line = reader.readLine()) != null) sb.append(line);
         return sb.toString();
     }
 
     public void unloadPlugins()
     {
         final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        if(!elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI"))
+        if (!elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI"))
         {
             this.logger.err(String.format("'Unloading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
             return;
         }
-        if(this.loaded)
-            this.loadedPlugins.forEach(Plugin::onStop);
+        if (this.loaded) this.loadedPlugins.forEach(Plugin::onStop);
         this.loaded = false;
     }
 
@@ -215,5 +216,22 @@ public class PluginLoader
     public IAPI getApi()
     {
         return this.api;
+    }
+
+    @Override
+    public String toJson()
+    {
+        final JsonObject result = new JsonObject();
+
+        result.addProperty("name", this.name);
+        result.add("pluginsDir", JsonUtils.toJson(this.pluginsDir));
+        result.addProperty("registeredClass", this.registeredClass.getName());
+        final JsonArray array = new JsonArray(this.loadedPlugins.size());
+        this.loadedPlugins.forEach(plugin -> array.add(JsonParser.parseString(plugin.toJson())));
+        result.add("loadedPlugins", array);
+        result.add("api", JsonParser.parseString(this.api.toJson()));
+        result.addProperty("loaded", this.loaded);
+
+        return result.toString();
     }
 }

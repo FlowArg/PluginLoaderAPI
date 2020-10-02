@@ -7,10 +7,11 @@ import java.io.File;
 
 public class Main
 {
-    public static void main(String[] args)
+    public static void main(String[] args) throws InterruptedException
     {
         final PluginLoader testPluginLoader = new PluginLoader("Test", new File(".", "plugins"), Main.class);
         final PluginLoader anotherPluginLoader = new PluginLoader("Another", new File(".", "plugins/another"), Main.class, new APIImplementation());
+
         PluginLoaderAPI.registerPluginLoader(testPluginLoader).complete();
         PluginLoaderAPI.registerPluginLoader(anotherPluginLoader).complete();
         // Disabling "stop" in console
@@ -27,5 +28,9 @@ public class Main
         // Replace "stop" by "exit"
         PluginLoaderAPI.addShutdownTrigger(pluginLoaders -> PluginLoaderAPI.getScanner().nextLine().equalsIgnoreCase("exit")).complete();
         PluginLoaderAPI.ready(Main.class).complete();
+
+        Thread.sleep(5000L);
+        PluginLoaderAPI.getLogger().info(testPluginLoader.toJson());
+        PluginLoaderAPI.getLogger().info(anotherPluginLoader.toJson());
     }
 }

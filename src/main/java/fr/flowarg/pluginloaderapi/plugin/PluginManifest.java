@@ -1,6 +1,9 @@
 package fr.flowarg.pluginloaderapi.plugin;
 
-public class PluginManifest
+import fr.flowarg.pluginloaderapi.PluginLoaderAPI;
+import fr.flowarg.pluginloaderapi.api.JsonSerializable;
+
+public class PluginManifest implements JsonSerializable
 {
     private String name;
     private String pluginClass;
@@ -19,5 +22,11 @@ public class PluginManifest
     public String getVersion()
     {
         return this.version;
+    }
+
+    @Override
+    public String toJson()
+    {
+        return PluginLoaderAPI.getGson().toJson(this);
     }
 }

@@ -1,19 +1,21 @@
 package fr.flowarg.pluginloaderapi.plugin;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import fr.flowarg.pluginloaderapi.api.IAPI;
+import fr.flowarg.pluginloaderapi.api.JsonSerializable;
+import fr.flowarg.pluginloaderapi.api.JsonUtils;
 
 import java.io.File;
-import java.util.jar.JarFile;
 
-public abstract class Plugin
+public abstract class Plugin implements JsonSerializable
 {
     private File pluginFile;
-    private JarFile jarFile;
     private File dataPluginFolder;
     private PluginLoader pluginLoader;
     private String pluginName;
     private String version;
-    private PluginLogger logger;
+    private transient PluginLogger logger;
     private IAPI api;
 
     public abstract void onStart();
@@ -42,11 +44,6 @@ public abstract class Plugin
     public final String getVersion()
     {
         return this.version;
-    }
-
-    public final JarFile getJarFile()
-    {
-        return this.jarFile;
     }
 
     public final PluginLogger getLogger()
@@ -86,11 +83,6 @@ public abstract class Plugin
         this.version = version;
     }
 
-    final void setJarFile(JarFile jarFile)
-    {
-        this.jarFile = jarFile;
-    }
-
     final void setLogger(PluginLogger logger)
     {
         this.logger = logger;
@@ -99,5 +91,18 @@ public abstract class Plugin
     final void setApi(IAPI api)
     {
         this.api = api;
+    }
+
+    @Override
+    public String toJson()
+    {
+        final JsonObject result = new JsonObject();
+        result.add("pluginFile", JsonUtils.toJson(this.pluginFile));
+        result.add("dataPluginFolder", JsonUtils.toJson(this.dataPluginFolder));
+        result.addProperty("pluginLoader", this.pluginLoader.getName());
+        result.addProperty("pluginName", this.pluginName);
+        result.addProperty("version", this.version);
+        result.add("api", JsonParser.parseString(this.api.toJson()));
+        return result.toString();
     }
 }

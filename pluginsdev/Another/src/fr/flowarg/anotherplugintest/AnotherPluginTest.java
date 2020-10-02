@@ -21,6 +21,9 @@ public class AnotherPluginTest extends Plugin
         this.getLogger().info(this.getPluginName() + " using API " + this.getApi().getAPIName() + "...");
         if(this.getApi() instanceof APIImplementation)
             this.getLogger().info("API UUID: " + ((APIImplementation)this.getApi()).getRandomUUID());
+
+
+        this.getLogger().info(this.toJson());
     }
 
     @Override
