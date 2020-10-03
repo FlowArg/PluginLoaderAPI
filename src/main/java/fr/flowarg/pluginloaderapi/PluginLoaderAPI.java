@@ -21,7 +21,7 @@ public class PluginLoaderAPI
     private static final List<PluginLoader> PLUGIN_LOADERS = new ArrayList<>();
     private static final List<Class<?>> READY_CLASSES = new ArrayList<>();
     private static final List<Class<?>> AWAIT_READY = new ArrayList<>();
-    private static final ILogger LOGGER = new Logger("[PluginLoaderAPI]", null);
+    private static ILogger logger = new Logger("[PluginLoaderAPI]", null);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
     private static final Scanner SCANNER = new Scanner(System.in);
     private static final Predicate<List<PluginLoader>> DEFAULT_SHUTDOWN_TRIGGER = pluginLoaders -> SCANNER.nextLine().equalsIgnoreCase("stop");
@@ -37,7 +37,7 @@ public class PluginLoaderAPI
     {
         if(PLUGIN_LOADERS.contains(pluginLoader))
         {
-            LOGGER.err("PluginLoader : '" + pluginLoader.getName() + "' is already registered !");
+            logger.err("PluginLoader : '" + pluginLoader.getName() + "' is already registered !");
             return new Task<>(pluginLoader, plLoader -> false);
         }
         else
@@ -46,12 +46,12 @@ public class PluginLoaderAPI
             {
                 if(x.getPluginsDir().getAbsolutePath().equals(pluginLoader.getPluginsDir().getAbsolutePath()))
                 {
-                    LOGGER.err("The plugins directory of '" + pluginLoader.getName() + "' plugin loader is already selected.");
+                    logger.err("The plugins directory of '" + pluginLoader.getName() + "' plugin loader is already selected.");
                     return new Task<>(pluginLoader, plLoader -> false);
                 }
                 else if (x.getName().equals(pluginLoader.getName()))
                 {
-                    LOGGER.err("PluginLoader : '" + pluginLoader.getName() + "' is already registered !");
+                    logger.err("PluginLoader : '" + pluginLoader.getName() + "' is already registered !");
                     return new Task<>(pluginLoader, plLoader -> false);
                 }
             }
@@ -61,7 +61,7 @@ public class PluginLoaderAPI
             if(!AWAIT_READY.contains(plLoader.getRegisteredClass()))
                 AWAIT_READY.add(plLoader.getRegisteredClass());
             return true;
-        }, () -> LOGGER.debug(String.format("Registering %s plugin loader.", pluginLoader.getName())), LoggerActionType.BEFORE);
+        }, () -> logger.debug(String.format("Registering %s plugin loader.", pluginLoader.getName())), LoggerActionType.BEFORE);
     }
 
     private static Task<PluginLoader> unregisterPluginLoader(PluginLoader pluginLoader)
@@ -69,7 +69,7 @@ public class PluginLoaderAPI
         return new Task<>(pluginLoader, plLoader -> {
             PLUGIN_LOADERS.remove(plLoader);
             return true;
-        }, () -> LOGGER.debug(String.format("Unregistering %s plugin loader.", pluginLoader.getName())), LoggerActionType.BEFORE);
+        }, () -> logger.debug(String.format("Unregistering %s plugin loader.", pluginLoader.getName())), LoggerActionType.BEFORE);
     }
 
     private static void shutdown()
@@ -86,7 +86,7 @@ public class PluginLoaderAPI
         }
         while (!flag.get()) ;
 
-        LOGGER.info("Shutting down PluginLoaderAPI.");
+        logger.info("Shutting down PluginLoaderAPI.");
         int lgt = PLUGIN_LOADERS.size();
         for (int i = 0; i < lgt; lgt--)
         {
@@ -104,7 +104,7 @@ public class PluginLoaderAPI
             for (PluginLoader pluginLoader : PLUGIN_LOADERS)
                 if(pluginLoader.isLoaded())
                 {
-                    LOGGER.err("Could not ready " + clazz.getName() + " class, PluginLoaders are already loaded !");
+                    logger.err("Could not ready " + clazz.getName() + " class, PluginLoaders are already loaded !");
                     return false;
                 }
                 else if (pluginLoader.getRegisteredClass().getName().equals(clazz.getName()) && !READY_CLASSES.contains(clazz))
@@ -112,27 +112,12 @@ public class PluginLoaderAPI
             if(READY_CLASSES.size() == AWAIT_READY.size())
                 loadPlugins();
             return true;
-        }, () -> LOGGER.debug("Successfully make ready the class: '" + clazz.getName() + "'."), LoggerActionType.AFTER);
+        }, () -> logger.debug("Successfully make ready the class: '" + clazz.getName() + "'."), LoggerActionType.AFTER);
     }
 
     private static void loadPlugins()
     {
         PLUGIN_LOADERS.forEach(PluginLoader::loadPlugins);
-    }
-
-    public static ILogger getLogger()
-    {
-        return LOGGER;
-    }
-
-    public static Gson getGson()
-    {
-        return GSON;
-    }
-
-    public static Scanner getScanner()
-    {
-        return SCANNER;
     }
 
     public static Task<Predicate<List<PluginLoader>>> addShutdownTrigger(Predicate<List<PluginLoader>> shutdownTrigger)
@@ -150,5 +135,25 @@ public class PluginLoaderAPI
             }
             return true;
         });
+    }
+
+    public static ILogger getLogger()
+    {
+        return logger;
+    }
+
+    public static Gson getGson()
+    {
+        return GSON;
+    }
+
+    public static Scanner getScanner()
+    {
+        return SCANNER;
+    }
+
+    public static void setLogger(ILogger logger)
+    {
+        PluginLoaderAPI.logger = logger;
     }
 }
