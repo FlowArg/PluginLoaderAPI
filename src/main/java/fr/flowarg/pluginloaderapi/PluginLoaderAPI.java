@@ -112,7 +112,7 @@ public class PluginLoaderAPI
             if(READY_CLASSES.size() == AWAIT_READY.size())
                 loadPlugins();
             return true;
-        });
+        }, () -> LOGGER.debug("Successfully make ready the class: '" + clazz.getName() + "'."), LoggerActionType.AFTER);
     }
 
     private static void loadPlugins()

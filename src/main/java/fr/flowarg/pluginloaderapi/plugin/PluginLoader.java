@@ -60,7 +60,14 @@ public class PluginLoader implements JsonSerializable
         }
         if (!this.loaded)
         {
-            this.logger.info("Searching for plugins in : " + pluginsDir.getAbsolutePath() + ".");
+
+            try
+            {
+                this.logger.info("Searching for plugins in : " + this.pluginsDir.getCanonicalPath() + ".");
+            } catch (IOException e)
+            {
+                e.printStackTrace();
+            }
             if (this.pluginsDir.listFiles() != null && this.pluginsDir.listFiles().length > 0)
             {
                 for (File plugin : this.pluginsDir.listFiles())
@@ -98,7 +105,7 @@ public class PluginLoader implements JsonSerializable
 
     private void checkForUpdates(File plugin) throws IOException
     {
-        final File dir = new File(plugin.getAbsolutePath().replace(".jar", ""));
+        final File dir = new File(plugin.getCanonicalPath().replace(".jar", ""));
         boolean flag = false;
         if (dir.listFiles() != null && dir.listFiles().length > 0)
         {
@@ -139,7 +146,16 @@ public class PluginLoader implements JsonSerializable
         chargingPlugin.setPluginFile(plugin);
         chargingPlugin.setPluginLoader(this);
         chargingPlugin.setPluginName(manifest.getName());
-        chargingPlugin.setDataPluginFolder(new File(plugin.getAbsolutePath().replace(".jar", "")));
+        File dataFolder;
+        try
+        {
+            dataFolder = new File(plugin.getCanonicalPath().replace(".jar", ""));
+        } catch (IOException e)
+        {
+            this.logger.err("Cannot use canonical path ! Using absolute path... " + plugin.getAbsolutePath());
+            dataFolder = new File(plugin.getAbsolutePath().replace(".jar", ""));
+        }
+        chargingPlugin.setDataPluginFolder(dataFolder);
         chargingPlugin.setVersion(manifest.getVersion());
         chargingPlugin.setApi(this.api);
         chargingPlugin.setLogger(new PluginLogger(chargingPlugin.getPluginName(), this.logger.getPrefix()));

@@ -1,6 +1,7 @@
 package fr.flowarg.sampleimplentation;
 
 import fr.flowarg.pluginloaderapi.PluginLoaderAPI;
+import fr.flowarg.pluginloaderapi.api.Task;
 import fr.flowarg.pluginloaderapi.plugin.PluginLoader;
 
 import java.io.File;
@@ -27,10 +28,14 @@ public class Main
         }).complete();
         // Replace "stop" by "exit"
         PluginLoaderAPI.addShutdownTrigger(pluginLoaders -> PluginLoaderAPI.getScanner().nextLine().equalsIgnoreCase("exit")).complete();
-        PluginLoaderAPI.ready(Main.class).complete();
+
+        final Task<Void> readyTask = PluginLoaderAPI.ready(Main.class);
+        PluginLoaderAPI.getLogger().debug("Before the task: " + readyTask.toJson());
+        readyTask.complete();
+        PluginLoaderAPI.getLogger().debug("After the task: " + readyTask.toJson());
 
         Thread.sleep(5000L);
-        PluginLoaderAPI.getLogger().info(testPluginLoader.toJson());
-        PluginLoaderAPI.getLogger().info(anotherPluginLoader.toJson());
+        PluginLoaderAPI.getLogger().info("TestPluginLoader json: " + testPluginLoader.toJson());
+        PluginLoaderAPI.getLogger().info("AnotherPluginLoader json: " + anotherPluginLoader.toJson());
     }
 }

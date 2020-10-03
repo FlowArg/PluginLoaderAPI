@@ -1,18 +1,24 @@
 package fr.flowarg.pluginloaderapi.api;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.util.function.Predicate;
 
-public class Task<E>
+public class Task<E> implements JsonSerializable
 {
+    private static final Runnable DEFAULT_LOGGER_ACTION = () -> {};
     private final E element;
-    private final Predicate<E> taskToQueue;
-    private Runnable beforeLoggerAction = () -> {};
-    private Runnable afterLoggerAction = () -> {};
+    private final transient Predicate<E> taskToQueue;
+    private Runnable beforeLoggerAction = DEFAULT_LOGGER_ACTION;
+    private Runnable afterLoggerAction = DEFAULT_LOGGER_ACTION;
+    private boolean executed;
 
     public Task(E element, Predicate<E> taskToQueue)
     {
         this.element = element;
         this.taskToQueue = taskToQueue;
+        this.executed = false;
     }
 
     public Task(E element, Predicate<E> taskToQueue, Runnable loggerAction, LoggerActionType type)
@@ -28,6 +34,7 @@ public class Task<E>
                 this.beforeLoggerAction = loggerAction;
                 break;
         }
+        this.executed = false;
     }
 
     public Task(E element, Predicate<E> taskToQueue, Runnable beforeLoggerAction, Runnable afterLoggerAction)
@@ -36,17 +43,38 @@ public class Task<E>
         this.taskToQueue = taskToQueue;
         this.beforeLoggerAction = beforeLoggerAction;
         this.afterLoggerAction = afterLoggerAction;
+        this.executed = false;
     }
 
     public void complete()
     {
+        this.executed = true;
         this.beforeLoggerAction.run();
-        this.taskToQueue.test(this.element);
-        this.afterLoggerAction.run();
+        if(this.taskToQueue.test(this.element))
+            this.afterLoggerAction.run();
     }
 
     public E getElement()
     {
         return this.element;
+    }
+
+    public boolean isExecuted()
+    {
+        return this.executed;
+    }
+
+    @Override
+    public String toJson()
+    {
+        final JsonObject result = new JsonObject();
+        if (this.element instanceof JsonSerializable)
+            result.add("element", JsonParser.parseString(((JsonSerializable)this.element).toJson()));
+        else result.addProperty("element", this.element != null ? this.element.toString() : "null");
+
+        result.addProperty("beforeLoggerAction", !this.beforeLoggerAction.equals(DEFAULT_LOGGER_ACTION));
+        result.addProperty("afterLoggerAction", !this.afterLoggerAction.equals(DEFAULT_LOGGER_ACTION));
+        result.addProperty("executed", this.executed);
+        return result.toString();
     }
 }
