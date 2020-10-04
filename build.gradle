@@ -2,6 +2,11 @@ allprojects {
     apply plugin: 'java-library'
     group 'fr.flowarg'
 
+    compileJava {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        options.encoding = 'UTF-8'
+    }
+
     repositories {
         jcenter()
     }
@@ -13,15 +18,3 @@ allprojects {
 }
 
 version '1.0.0'
-
-subprojects {
-    dependencies {
-        compileOnly parent
-    }
-}
-
-project(':Another') {
-    dependencies {
-        compileOnly parent.project(':SampleImplementation')
-    }
-}

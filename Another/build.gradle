@@ -1,1 +1,13 @@
-version '1.0.1'
+archivesBaseName = project.name + "PluginTest"
+
+dependencies {
+    compileOnly parent.project(':SampleImplementation')
+    compileOnly parent
+}
+
+tasks.build.doLast {
+    copy {
+        from "$buildDir/libs/" + archivesBaseName + ".jar"
+        into "$rootDir/plugins/another/"
+    }
+}
