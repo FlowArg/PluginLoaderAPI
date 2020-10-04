@@ -5,7 +5,7 @@ dependencies {
     compileOnly parent
 }
 
-tasks.build.doLast {
+task deploy() {
     copy {
         from "$buildDir/libs/" + archivesBaseName + ".jar"
         into "$rootDir/plugins/another/"
