@@ -1,5 +1,7 @@
 allprojects {
     apply plugin: 'java-library'
+    apply plugin: 'maven-publish'
+    
     group 'fr.flowarg'
 
     compileJava {
@@ -13,6 +15,10 @@ allprojects {
     }
     
     tasks.build.finalizedBy(sourcesJar)
+    
+    artifacts {
+        archives sourcesJar
+    }
 
     repositories {
         jcenter()
