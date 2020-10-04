@@ -6,6 +6,13 @@ allprojects {
         sourceCompatibility = JavaVersion.VERSION_1_8
         options.encoding = 'UTF-8'
     }
+    
+    task sourcesJar(type: Jar) {
+        classifier 'sources'
+        from sourceSets.main.allSource
+    }
+    
+    tasks.build.finalizedBy(sourcesJar)
 
     repositories {
         jcenter()
