@@ -27,6 +27,6 @@ public class PluginUpdate implements JsonSerializable
     @Override
     public String toJson()
     {
-        return PluginLoaderAPI.getGson().toJson(this);
+        return PluginLoaderAPI.GSON.toJson(this);
     }
 }

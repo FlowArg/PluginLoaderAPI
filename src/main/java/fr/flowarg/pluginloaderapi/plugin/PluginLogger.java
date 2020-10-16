@@ -22,7 +22,7 @@ public class PluginLogger extends Logger
     {
         final String date = String.format("[%s] ", new SimpleDateFormat("hh:mm:ss").format(new Date()));
         final String msg = date + this.getPrefix() + this.plPrefix + (err ? "[ERROR] " : "[INFO] ") + toWrite;
-        if (err) System.err.println(msg);
+        if (err) System.out.println(EnumLogColor.RED.getColor() + msg + EnumLogColor.RESET.getColor());
         else System.out.println(msg);
     }
 
@@ -54,7 +54,6 @@ public class PluginLogger extends Logger
     {
         return this.plName;
     }
-
     public String getPlPrefix()
     {
         return this.plPrefix;

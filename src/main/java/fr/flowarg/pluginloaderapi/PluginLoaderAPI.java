@@ -14,15 +14,29 @@ import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
+/**
+ * PluginLoaderAPI (PLA)
+ *
+ * @author Flow Arg (FlowArg)
+ * @version release-1.0.0
+ *
+ * Main class of the API, check
+ * {@link PluginLoaderAPI#registerPluginLoader(PluginLoader)},
+ * {@link PluginLoaderAPI#ready(Class)},
+ * {@link PluginLoaderAPI#unregisterPluginLoader(PluginLoader)}
+ */
 public class PluginLoaderAPI
 {
+    /**
+     * Don't try to instantiate this class, today it's a class with only static methods.
+     */
     private PluginLoaderAPI() { throw new UnsupportedOperationException(); }
 
     private static final List<PluginLoader> PLUGIN_LOADERS = new ArrayList<>();
     private static final List<Class<?>> READY_CLASSES = new ArrayList<>();
     private static final List<Class<?>> AWAIT_READY = new ArrayList<>();
     private static ILogger logger = new Logger("[PluginLoaderAPI]", null);
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
+    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
     private static final Scanner SCANNER = new Scanner(System.in);
     private static final Predicate<List<PluginLoader>> DEFAULT_SHUTDOWN_TRIGGER = pluginLoaders -> SCANNER.nextLine().equalsIgnoreCase("stop");
     private static final List<Predicate<List<PluginLoader>>> SHUTDOWN_TRIGGERS = new ArrayList<>();
@@ -140,11 +154,6 @@ public class PluginLoaderAPI
     public static ILogger getLogger()
     {
         return logger;
-    }
-
-    public static Gson getGson()
-    {
-        return GSON;
     }
 
     public static Scanner getScanner()

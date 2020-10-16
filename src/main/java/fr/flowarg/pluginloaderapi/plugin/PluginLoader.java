@@ -66,7 +66,7 @@ public class PluginLoader implements JsonSerializable
                 this.logger.info("Searching for plugins in : " + this.pluginsDir.getCanonicalPath() + ".");
             } catch (IOException e)
             {
-                e.printStackTrace();
+                this.logger.printStackTrace(e);
             }
             if (this.pluginsDir.listFiles() != null && this.pluginsDir.listFiles().length > 0)
             {
@@ -114,7 +114,7 @@ public class PluginLoader implements JsonSerializable
                 if (file.getName().equals("update.json"))
                 {
                     final String jsonUpdate = FileUtils.loadFile(file);
-                    final PluginUpdate update = PluginLoaderAPI.getGson().fromJson(jsonUpdate, PluginUpdate.class);
+                    final PluginUpdate update = PluginLoaderAPI.GSON.fromJson(jsonUpdate, PluginUpdate.class);
                     if (!update.isIgnore())
                     {
                         final String crc32Url = update.getCrc32Url();
@@ -178,7 +178,7 @@ public class PluginLoader implements JsonSerializable
 
     private PluginManifest getPluginManifest(final JarFile jarFile, final ZipEntry entryManifest) throws IOException
     {
-        return PluginLoaderAPI.getGson().fromJson(this.getContentFromIS(jarFile.getInputStream(entryManifest)), PluginManifest.class);
+        return PluginLoaderAPI.GSON.fromJson(this.getContentFromIS(jarFile.getInputStream(entryManifest)), PluginManifest.class);
     }
 
     private String getContentFromIS(InputStream inputStream) throws IOException
