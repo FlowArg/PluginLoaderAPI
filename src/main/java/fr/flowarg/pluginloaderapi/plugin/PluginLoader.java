@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -28,8 +29,11 @@ public class PluginLoader implements JsonSerializable
     private final File pluginsDir;
     private final Class<?> registeredClass;
     private final List<Plugin> loadedPlugins = new ArrayList<>();
+    /** Non-Serializable. Logger to use in this plugin loader. */
     private final transient ILogger logger = PluginLoaderAPI.getLogger();
+    /** API used by plugins in {@link #pluginsDir} */
     private final IAPI api;
+    /** Why loading many times a plugin loader ? */
     private boolean loaded;
 
     public PluginLoader(String name, File pluginsDir, Class<?> registeredClass)
@@ -38,20 +42,24 @@ public class PluginLoader implements JsonSerializable
         this.pluginsDir = pluginsDir;
         this.registeredClass = registeredClass;
         this.loaded = false;
-        this.api = IAPI.DEFAULT;
+        this.api = IAPI.DEFAULT.get();
     }
 
-    public PluginLoader(String name, File pluginsDir, Class<?> registeredClass, IAPI api)
+    public PluginLoader(String name, File pluginsDir, Class<?> registeredClass, Supplier<IAPI> api)
     {
         this.name = name;
         this.pluginsDir = pluginsDir;
         this.registeredClass = registeredClass;
         this.loaded = false;
-        this.api = api;
+        this.api = api.get();
     }
 
+    /**
+     * Load plugins from {@link #pluginsDir}
+     */
     public void loadPlugins()
     {
+        // Prevent unsafe operations.
         final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
         if (!elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI"))
         {
@@ -60,27 +68,26 @@ public class PluginLoader implements JsonSerializable
         }
         if (!this.loaded)
         {
-
-            try
-            {
-                this.logger.info("Searching for plugins in : " + this.pluginsDir.getCanonicalPath() + ".");
-            } catch (IOException e)
-            {
-                this.logger.printStackTrace(e);
-            }
-            if (this.pluginsDir.listFiles() != null && this.pluginsDir.listFiles().length > 0)
-            {
-                for (File plugin : this.pluginsDir.listFiles())
+            new Thread(() -> {
+                try
                 {
-                    if (!plugin.isDirectory())
+                    this.logger.info("Searching for plugins in : " + this.pluginsDir.getCanonicalPath() + ".");
+                } catch (IOException e)
+                {
+                    this.logger.printStackTrace(e);
+                }
+                if (this.pluginsDir.listFiles() != null && this.pluginsDir.listFiles().length > 0)
+                {
+                    for (File plugin : this.pluginsDir.listFiles())
                     {
-                        try
+                        if (!plugin.isDirectory())
                         {
-                            final JarFile jarFile = new JarFile(plugin, false, ZipFile.OPEN_READ);
-                            final ZipEntry entryManifest = jarFile.getEntry("manifest.json");
-                            if (entryManifest != null)
+                            try
                             {
-                                new Thread(() -> {
+                                final JarFile jarFile = new JarFile(plugin, false, ZipFile.OPEN_READ);
+                                final ZipEntry entryManifest = jarFile.getEntry("manifest.json");
+                                if (entryManifest != null)
+                                {
                                     try
                                     {
                                         this.checkForUpdates(plugin);
@@ -89,20 +96,25 @@ public class PluginLoader implements JsonSerializable
                                     {
                                         this.logger.printStackTrace(e);
                                     }
-                                }, this.name + " Plugin Loader Thread").start();
+                                }
+                                else this.logger.warn("manifest.json not found in : " + plugin.getName() + '.');
+                            } catch (IOException e)
+                            {
+                                this.logger.printStackTrace(e);
                             }
-                            else this.logger.warn("manifest.json not found in : " + plugin.getName() + '.');
-                        } catch (IOException e)
-                        {
-                            this.logger.printStackTrace(e);
                         }
                     }
                 }
-            }
-            this.loaded = true;
+                this.loaded = true;
+            }, this.name + " Plugin Loader Thread").start();
         }
     }
 
+    /**
+     * Check if a plugin can be update.
+     * @param plugin file of plugin
+     * @throws IOException if an error occurred
+     */
     private void checkForUpdates(File plugin) throws IOException
     {
         final File dir = new File(plugin.getCanonicalPath().replace(".jar", ""));
@@ -192,6 +204,7 @@ public class PluginLoader implements JsonSerializable
 
     public void unloadPlugins()
     {
+        // Prevent unsafe operations.
         final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
         if (!elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI"))
         {

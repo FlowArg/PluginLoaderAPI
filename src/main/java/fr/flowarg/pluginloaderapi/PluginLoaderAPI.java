@@ -28,7 +28,7 @@ import java.util.function.Predicate;
 public class PluginLoaderAPI
 {
     /**
-     * Don't try to instantiate this class, today it's a class with only static methods.
+     * Don't try to instantiate this class, today it's a class only with static methods.
      */
     private PluginLoaderAPI() { throw new UnsupportedOperationException(); }
 
@@ -36,8 +36,8 @@ public class PluginLoaderAPI
     private static final List<Class<?>> READY_CLASSES = new ArrayList<>();
     private static final List<Class<?>> AWAIT_READY = new ArrayList<>();
     private static ILogger logger = new Logger("[PluginLoaderAPI]", null);
-    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
-    private static final Scanner SCANNER = new Scanner(System.in);
+    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().disableHtmlEscaping().create();
+    public static final Scanner SCANNER = new Scanner(System.in);
     private static final Predicate<List<PluginLoader>> DEFAULT_SHUTDOWN_TRIGGER = pluginLoaders -> SCANNER.nextLine().equalsIgnoreCase("stop");
     private static final List<Predicate<List<PluginLoader>>> SHUTDOWN_TRIGGERS = new ArrayList<>();
 
@@ -52,7 +52,7 @@ public class PluginLoaderAPI
         if(PLUGIN_LOADERS.contains(pluginLoader))
         {
             logger.err("PluginLoader : '" + pluginLoader.getName() + "' is already registered !");
-            return new Task<>(pluginLoader, plLoader -> false);
+            return new Task<>(pluginLoader, () -> plLoader -> false);
         }
         else
         {
@@ -61,16 +61,16 @@ public class PluginLoaderAPI
                 if(x.getPluginsDir().getAbsolutePath().equals(pluginLoader.getPluginsDir().getAbsolutePath()))
                 {
                     logger.err("The plugins directory of '" + pluginLoader.getName() + "' plugin loader is already selected.");
-                    return new Task<>(pluginLoader, plLoader -> false);
+                    return new Task<>(pluginLoader, () -> plLoader -> false);
                 }
                 else if (x.getName().equals(pluginLoader.getName()))
                 {
                     logger.err("PluginLoader : '" + pluginLoader.getName() + "' is already registered !");
-                    return new Task<>(pluginLoader, plLoader -> false);
+                    return new Task<>(pluginLoader, () -> plLoader -> false);
                 }
             }
         }
-        return new Task<>(pluginLoader, plLoader -> {
+        return new Task<>(pluginLoader, () -> plLoader -> {
             PLUGIN_LOADERS.add(plLoader);
             if(!AWAIT_READY.contains(plLoader.getRegisteredClass()))
                 AWAIT_READY.add(plLoader.getRegisteredClass());
@@ -80,7 +80,7 @@ public class PluginLoaderAPI
 
     private static Task<PluginLoader> unregisterPluginLoader(PluginLoader pluginLoader)
     {
-        return new Task<>(pluginLoader, plLoader -> {
+        return new Task<>(pluginLoader, () -> plLoader -> {
             PLUGIN_LOADERS.remove(plLoader);
             return true;
         }, () -> logger.debug(String.format("Unregistering %s plugin loader.", pluginLoader.getName())), LoggerActionType.BEFORE);
@@ -114,7 +114,7 @@ public class PluginLoaderAPI
 
     public static Task<Void> ready(Class<?> clazz)
     {
-        return new Task<>(null, unused -> {
+        return new Task<>(null, () -> unused -> {
             for (PluginLoader pluginLoader : PLUGIN_LOADERS)
                 if(pluginLoader.isLoaded())
                 {
@@ -136,12 +136,12 @@ public class PluginLoaderAPI
 
     public static Task<Predicate<List<PluginLoader>>> addShutdownTrigger(Predicate<List<PluginLoader>> shutdownTrigger)
     {
-        return new Task<>(shutdownTrigger, SHUTDOWN_TRIGGERS::add);
+        return new Task<>(shutdownTrigger, () -> SHUTDOWN_TRIGGERS::add);
     }
 
     public static Task<Void> removeDefaultShutdownTrigger()
     {
-        return new Task<>(null, unused -> {
+        return new Task<>(null, () -> unused -> {
             for (int i = 0; i < SHUTDOWN_TRIGGERS.size(); i++)
             {
                 if(SHUTDOWN_TRIGGERS.get(i).equals(DEFAULT_SHUTDOWN_TRIGGER))
@@ -154,11 +154,6 @@ public class PluginLoaderAPI
     public static ILogger getLogger()
     {
         return logger;
-    }
-
-    public static Scanner getScanner()
-    {
-        return SCANNER;
     }
 
     public static void setLogger(ILogger logger)

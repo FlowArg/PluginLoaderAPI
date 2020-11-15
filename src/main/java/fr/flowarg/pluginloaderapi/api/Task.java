@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class Task<E> implements JsonSerializable
 {
@@ -14,17 +15,17 @@ public class Task<E> implements JsonSerializable
     private Runnable afterLoggerAction = DEFAULT_LOGGER_ACTION;
     private boolean executed;
 
-    public Task(E element, Predicate<E> taskToQueue)
+    public Task(E element, Supplier<Predicate<E>> taskToQueue)
     {
         this.element = element;
-        this.taskToQueue = taskToQueue;
+        this.taskToQueue = taskToQueue.get();
         this.executed = false;
     }
 
-    public Task(E element, Predicate<E> taskToQueue, Runnable loggerAction, LoggerActionType type)
+    public Task(E element, Supplier<Predicate<E>> taskToQueue, Runnable loggerAction, LoggerActionType type)
     {
         this.element = element;
-        this.taskToQueue = taskToQueue;
+        this.taskToQueue = taskToQueue.get();
         switch (type)
         {
             case AFTER:
@@ -37,10 +38,10 @@ public class Task<E> implements JsonSerializable
         this.executed = false;
     }
 
-    public Task(E element, Predicate<E> taskToQueue, Runnable beforeLoggerAction, Runnable afterLoggerAction)
+    public Task(E element, Supplier<Predicate<E>> taskToQueue, Runnable beforeLoggerAction, Runnable afterLoggerAction)
     {
         this.element = element;
-        this.taskToQueue = taskToQueue;
+        this.taskToQueue = taskToQueue.get();
         this.beforeLoggerAction = beforeLoggerAction;
         this.afterLoggerAction = afterLoggerAction;
         this.executed = false;

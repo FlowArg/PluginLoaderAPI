@@ -2,10 +2,11 @@ package fr.flowarg.pluginloaderapi.api;
 
 import com.google.gson.JsonObject;
 
-@FunctionalInterface
+import java.util.function.Supplier;
+
 public interface IAPI extends JsonSerializable
 {
-    IAPI DEFAULT = () -> "default";
+    Supplier<IAPI> DEFAULT = () -> () -> "default";
 
     String getAPIName();
 
@@ -14,5 +15,10 @@ public interface IAPI extends JsonSerializable
         final JsonObject result = new JsonObject();
         result.addProperty("name", this.getAPIName());
         return result.toString();
+    }
+
+    default Supplier<Object> subAPI()
+    {
+        return () -> null;
     }
 }

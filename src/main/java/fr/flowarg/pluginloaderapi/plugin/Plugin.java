@@ -44,11 +44,11 @@ public abstract class Plugin implements JsonSerializable
     {
         return this.logger;
     }
-
     public final IAPI getApi()
     {
         return this.api;
     }
+
     final void setPluginFile(File pluginFile)
     {
         this.pluginFile = pluginFile;
