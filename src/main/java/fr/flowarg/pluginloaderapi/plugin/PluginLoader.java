@@ -18,8 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -31,6 +29,7 @@ public class PluginLoader implements JsonSerializable
     private final File pluginsDir;
     private final Class<?> registeredClass;
     private final List<Plugin> loadedPlugins = new ArrayList<>();
+    private final List<String> validExtensions = new ArrayList<>();
     /** Non-Serializable. Logger to use in this plugin loader. */
     private final transient ILogger logger = PluginLoaderAPI.getLogger();
     /** API used by plugins in {@link #pluginsDir} */
@@ -47,6 +46,7 @@ public class PluginLoader implements JsonSerializable
         this.registeredClass = registeredClass;
         this.loaded = false;
         this.toLoad = 0;
+        this.validExtensions.add("jar");
         this.api = IAPI.DEFAULT.get();
     }
 
@@ -57,6 +57,7 @@ public class PluginLoader implements JsonSerializable
         this.registeredClass = registeredClass;
         this.loaded = false;
         this.toLoad = 0;
+        this.validExtensions.add("jar");
         this.api = api.get();
     }
 
@@ -88,7 +89,7 @@ public class PluginLoader implements JsonSerializable
                     final List<Runnable> launcher = new ArrayList<>();
                     for (File plugin : this.pluginsDir.listFiles())
                     {
-                        if (!plugin.isDirectory())
+                        if (!plugin.isDirectory() && this.isValidExtension(plugin))
                         {
                             try
                             {
@@ -267,6 +268,16 @@ public class PluginLoader implements JsonSerializable
     public List<Plugin> getLoadedPlugins()
     {
         return this.loadedPlugins;
+    }
+
+    public boolean isValidExtension(File file)
+    {
+        return this.validExtensions.contains(FileUtils.getFileExtension(file));
+    }
+
+    public void addValidExtension(String ext)
+    {
+        this.validExtensions.add(ext);
     }
 
     @Override
