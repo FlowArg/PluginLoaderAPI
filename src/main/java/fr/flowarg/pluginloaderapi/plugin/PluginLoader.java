@@ -18,6 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -36,12 +38,15 @@ public class PluginLoader implements JsonSerializable
     /** Why loading many times a plugin loader ? */
     private boolean loaded;
 
+    private int toLoad;
+
     public PluginLoader(String name, File pluginsDir, Class<?> registeredClass)
     {
         this.name = name;
         this.pluginsDir = pluginsDir;
         this.registeredClass = registeredClass;
         this.loaded = false;
+        this.toLoad = 0;
         this.api = IAPI.DEFAULT.get();
     }
 
@@ -51,6 +56,7 @@ public class PluginLoader implements JsonSerializable
         this.pluginsDir = pluginsDir;
         this.registeredClass = registeredClass;
         this.loaded = false;
+        this.toLoad = 0;
         this.api = api.get();
     }
 
@@ -66,18 +72,20 @@ public class PluginLoader implements JsonSerializable
             this.logger.err(String.format("'Loading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
             return;
         }
+
         if (!this.loaded)
         {
+            try
+            {
+                this.logger.info("Searching for plugins in : " + this.pluginsDir.getCanonicalPath() + ".");
+            } catch (IOException e)
+            {
+                this.logger.printStackTrace(e);
+            }
             new Thread(() -> {
-                try
-                {
-                    this.logger.info("Searching for plugins in : " + this.pluginsDir.getCanonicalPath() + ".");
-                } catch (IOException e)
-                {
-                    this.logger.printStackTrace(e);
-                }
                 if (this.pluginsDir.listFiles() != null && this.pluginsDir.listFiles().length > 0)
                 {
+                    final List<Runnable> launcher = new ArrayList<>();
                     for (File plugin : this.pluginsDir.listFiles())
                     {
                         if (!plugin.isDirectory())
@@ -88,14 +96,18 @@ public class PluginLoader implements JsonSerializable
                                 final ZipEntry entryManifest = jarFile.getEntry("manifest.json");
                                 if (entryManifest != null)
                                 {
-                                    try
-                                    {
-                                        this.checkForUpdates(plugin);
-                                        this.launchPlugin(this.addPluginToClassLoader(jarFile, entryManifest, plugin), plugin);
-                                    } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException | IOException e)
-                                    {
-                                        this.logger.printStackTrace(e);
-                                    }
+                                    this.toLoad++;
+                                    launcher.add(() -> {
+                                        try
+                                        {
+                                            this.checkForUpdates(plugin);
+                                            this.launchPlugin(this.addPluginToClassLoader(jarFile, entryManifest, plugin), plugin);
+                                            this.toLoad--;
+                                        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException | IOException e)
+                                        {
+                                            this.logger.printStackTrace(e);
+                                        }
+                                    });
                                 }
                                 else this.logger.warn("manifest.json not found in : " + plugin.getName() + '.');
                             } catch (IOException e)
@@ -104,6 +116,7 @@ public class PluginLoader implements JsonSerializable
                             }
                         }
                     }
+                    launcher.forEach(Runnable::run);
                 }
                 this.loaded = true;
             }, this.name + " Plugin Loader Thread").start();
@@ -244,6 +257,16 @@ public class PluginLoader implements JsonSerializable
     public IAPI getApi()
     {
         return this.api;
+    }
+
+    public int getToLoad()
+    {
+        return this.toLoad;
+    }
+
+    public List<Plugin> getLoadedPlugins()
+    {
+        return this.loadedPlugins;
     }
 
     @Override

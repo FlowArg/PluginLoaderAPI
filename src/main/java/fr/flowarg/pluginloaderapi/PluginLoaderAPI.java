@@ -151,6 +151,23 @@ public class PluginLoaderAPI
         });
     }
 
+    public static boolean finishedLoading()
+    {
+        final AtomicBoolean result = new AtomicBoolean(true);
+        PLUGIN_LOADERS.forEach(pluginLoader -> {
+            if(result.get())
+            {
+                if(pluginLoader.isLoaded())
+                {
+                    if(pluginLoader.getToLoad() != pluginLoader.getLoadedPlugins().size())
+                        result.set(false);
+                }
+                else result.set(false);
+            }
+        });
+        return result.get();
+    }
+
     public static ILogger getLogger()
     {
         return logger;
