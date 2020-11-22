@@ -103,7 +103,6 @@ public class PluginLoader implements JsonSerializable
                                         {
                                             this.checkForUpdates(plugin);
                                             this.launchPlugin(this.addPluginToClassLoader(jarFile, entryManifest, plugin), plugin);
-                                            this.toLoad--;
                                         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException | IOException e)
                                         {
                                             this.logger.printStackTrace(e);
