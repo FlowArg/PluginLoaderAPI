@@ -70,7 +70,7 @@ public class PluginLoader implements JsonSerializable
         final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
         if (!elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI") && !elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.plugin.PluginLoader"))
         {
-            if(!elements[2].getClassName().contains("java") || !elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.plugin.PluginLoader"))
+            if(!elements[2].getClassName().contains("java") && !elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.plugin.PluginLoader"))
             {
                 this.logger.err(String.format("'Loading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
                 return;
@@ -245,6 +245,7 @@ public class PluginLoader implements JsonSerializable
         if (this.loaded)
         {
             this.loadedPlugins.forEach(Plugin::onStop);
+            this.loadedPlugins.clear();
             System.gc();
         }
         this.loaded = false;
