@@ -68,13 +68,10 @@ public class PluginLoader implements JsonSerializable
     {
         // Prevent unsafe operations.
         final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        if (!elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI") && !elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.plugin.PluginLoader"))
+        if(!elements[2].getClassName().contains("java") && !elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.plugin.PluginLoader"))
         {
-            if(!elements[2].getClassName().contains("java") && !elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.plugin.PluginLoader"))
-            {
-                this.logger.err(String.format("'Loading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
-                return;
-            }
+            this.logger.err(String.format("'Loading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
+            return;
         }
 
         this.logger.infoColor(ILogger.EnumLogColor.PURPLE, "Accepting loadPlugins classes: 2: " + elements[2].getClassName() + " - 3: " + elements[3].getClassName());
