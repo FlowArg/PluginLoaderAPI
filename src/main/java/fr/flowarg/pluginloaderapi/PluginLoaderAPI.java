@@ -124,14 +124,9 @@ public class PluginLoaderAPI
                 else if (pluginLoader.getRegisteredClass().getName().equals(clazz.getName()) && !READY_CLASSES.contains(clazz))
                     READY_CLASSES.add(clazz);
             if(READY_CLASSES.size() == AWAIT_READY.size())
-                loadPlugins();
+                PLUGIN_LOADERS.forEach(PluginLoader::loadPlugins);
             return true;
         }, () -> logger.debug("Successfully make ready the class: '" + clazz.getName() + "'."), LoggerActionType.AFTER);
-    }
-
-    private static void loadPlugins()
-    {
-        PLUGIN_LOADERS.forEach(PluginLoader::loadPlugins);
     }
 
     public static Task<Predicate<List<PluginLoader>>> addShutdownTrigger(Predicate<List<PluginLoader>> shutdownTrigger)
@@ -166,6 +161,14 @@ public class PluginLoaderAPI
             }
         });
         return result.get();
+    }
+
+    public static Task<PluginLoader> reloadPluginLoader(PluginLoader pluginLoader)
+    {
+        return new Task<>(pluginLoader, () -> active -> {
+            active.reload();
+            return true;
+        });
     }
 
     public static ILogger getLogger()

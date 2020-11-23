@@ -36,7 +36,7 @@ public class PluginLoader implements JsonSerializable
     private final IAPI api;
     /** Why loading many times a plugin loader ? */
     private boolean loaded;
-
+    /** Number of plugins to load. */
     private int toLoad;
 
     public PluginLoader(String name, File pluginsDir, Class<?> registeredClass)
@@ -68,7 +68,7 @@ public class PluginLoader implements JsonSerializable
     {
         // Prevent unsafe operations.
         final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        if (!elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI"))
+        if (!elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI") && !elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.plugin.PluginLoader"))
         {
             this.logger.err(String.format("'Loading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
             return;
@@ -131,7 +131,7 @@ public class PluginLoader implements JsonSerializable
     private void checkForUpdates(File plugin) throws IOException
     {
         final File dir = new File(plugin.getCanonicalPath().replace(".jar", ""));
-        boolean flag = false;
+        boolean flag = true;
         if (dir.listFiles() != null && dir.listFiles().length > 0)
         {
             for (File file : dir.listFiles())
@@ -139,29 +139,44 @@ public class PluginLoader implements JsonSerializable
                 if (file.getName().equals("update.json"))
                 {
                     final String jsonUpdate = FileUtils.loadFile(file);
-                    final PluginUpdate update = PluginLoaderAPI.GSON.fromJson(jsonUpdate, PluginUpdate.class);
-                    if (!update.isIgnore())
-                    {
-                        final String crc32Url = update.getCrc32Url();
-                        if (crc32Url != null && !crc32Url.trim().equals(""))
-                        {
-                            if (this.getContentFromIS(new URL(update.getCrc32Url()).openStream()).equalsIgnoreCase(Long.toString(FileUtils.getCRC32(plugin))))
-                                this.logger.info("No update found for: " + plugin.getName());
-                            else
-                            {
-                                this.logger.info("Update found for: " + plugin.getName() + ", downloading it...");
-                                Files.copy(new URL(update.getJarUrl()).openStream(), plugin.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                            }
-                        }
-                        else this.logger.err("Invalid update.json !! Skipping it...");
-                    }
-                    else this.logger.debug("Ignoring update checker for " + plugin.getName());
+                    this.downloadUpdate(jsonUpdate, plugin);
+                    flag = false;
                 }
-                else flag = true;
             }
         }
-        else flag = true;
+        else
+        {
+            final JarFile jarFile = new JarFile(plugin, false, ZipFile.OPEN_READ);
+            final ZipEntry entryUpdate = jarFile.getEntry("update.json");
+            if(entryUpdate != null)
+            {
+                final String jsonUpdate = this.getContentFromIS(jarFile.getInputStream(entryUpdate));
+                this.downloadUpdate(jsonUpdate, plugin);
+                flag = false;
+            }
+        }
         if (flag) this.logger.warn("No update.json found for: " + plugin.getName());
+    }
+
+    private void downloadUpdate(String jsonUpdate, final File plugin) throws IOException
+    {
+        final PluginUpdate update = PluginLoaderAPI.GSON.fromJson(jsonUpdate, PluginUpdate.class);
+        if (!update.isIgnore())
+        {
+            final String crc32Url = update.getCrc32Url();
+            if (crc32Url != null && !crc32Url.trim().equals(""))
+            {
+                if (this.getContentFromIS(new URL(update.getCrc32Url()).openStream()).equalsIgnoreCase(Long.toString(FileUtils.getCRC32(plugin))))
+                    this.logger.info("No update found for: " + plugin.getName());
+                else
+                {
+                    this.logger.info("Update found for: " + plugin.getName() + ", downloading it...");
+                    Files.copy(new URL(update.getJarUrl()).openStream(), plugin.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+            else this.logger.err("Invalid update.json !! Skipping it...");
+        }
+        else this.logger.debug("Ignoring update checker for " + plugin.getName());
     }
 
     private void launchPlugin(PluginManifest manifest, File plugin) throws ClassNotFoundException, IllegalAccessException, InstantiationException
@@ -219,13 +234,34 @@ public class PluginLoader implements JsonSerializable
     {
         // Prevent unsafe operations.
         final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+        if (!elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI") && !elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.plugin.PluginLoader"))
+        {
+            this.logger.err(String.format("'Unloading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
+            return;
+        }
+        if (this.loaded)
+        {
+            this.loadedPlugins.forEach(Plugin::onStop);
+            System.gc();
+        }
+        this.loaded = false;
+    }
+
+    public void reload()
+    {
+        // Prevent unsafe operations.
+        final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
         if (!elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI"))
         {
             this.logger.err(String.format("'Unloading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
             return;
         }
-        if (this.loaded) this.loadedPlugins.forEach(Plugin::onStop);
-        this.loaded = false;
+        if(this.loaded)
+        {
+            this.unloadPlugins();
+            this.loadPlugins();
+        }
+        this.logger.warn("Nothing to reload.");
     }
 
     public boolean isLoaded()
@@ -291,6 +327,7 @@ public class PluginLoader implements JsonSerializable
         this.loadedPlugins.forEach(plugin -> array.add(JsonUtils.toJson(plugin)));
         result.add("loadedPlugins", array);
         result.add("api", JsonUtils.toJson(this.api));
+        result.addProperty("toLoad", this.toLoad);
         result.addProperty("loaded", this.loaded);
 
         return result.toString();
