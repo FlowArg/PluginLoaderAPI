@@ -68,12 +68,13 @@ public class PluginLoader implements JsonSerializable
     {
         // Prevent unsafe operations.
         final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        for(StackTraceElement element : elements)
-            this.logger.warn('\t' + element.getClassName());
         if (!elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.PluginLoaderAPI") && !elements[3].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.plugin.PluginLoader"))
         {
-            this.logger.err(String.format("'Loading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
-            return;
+            if(!elements[2].getClassName().contains("java") || !elements[2].getClassName().equalsIgnoreCase("fr.flowarg.pluginloaderapi.plugin.PluginLoader"))
+            {
+                this.logger.err(String.format("'Loading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
+                return;
+            }
         }
 
         if (!this.loaded)
@@ -263,7 +264,7 @@ public class PluginLoader implements JsonSerializable
             this.unloadPlugins();
             this.loadPlugins();
         }
-        this.logger.warn("Nothing to reload.");
+        else this.logger.warn("Nothing to reload.");
     }
 
     public boolean isLoaded()
