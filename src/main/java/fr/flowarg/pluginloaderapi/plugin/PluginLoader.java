@@ -77,6 +77,8 @@ public class PluginLoader implements JsonSerializable
             }
         }
 
+        this.logger.infoColor(ILogger.EnumLogColor.PURPLE, "Accepting loadPlugins classes: 2: " + elements[2].getClassName() + " - 3: " + elements[3].getClassName());
+
         if (!this.loaded)
         {
             try
