@@ -116,17 +116,22 @@ public class PluginLoaderAPI
     {
         return new Task<>(null, () -> unused -> {
             for (PluginLoader pluginLoader : PLUGIN_LOADERS)
-                if(pluginLoader.isLoaded())
+            {
+                if (pluginLoader.isLoaded())
                 {
                     logger.err("Could not ready " + clazz.getName() + " class, PluginLoaders are already loaded !");
                     return false;
                 }
                 else if (pluginLoader.getRegisteredClass().getName().equals(clazz.getName()) && !READY_CLASSES.contains(clazz))
+                {
                     READY_CLASSES.add(clazz);
+                    logger.debug("Successfully make ready the class: '" + clazz.getName() + "'.");
+                }
+            }
             if(READY_CLASSES.size() == AWAIT_READY.size())
                 PLUGIN_LOADERS.forEach(PluginLoader::loadPlugins);
             return true;
-        }, () -> logger.debug("Successfully make ready the class: '" + clazz.getName() + "'."), LoggerActionType.AFTER);
+        });
     }
 
     public static Task<Predicate<List<PluginLoader>>> addShutdownTrigger(Predicate<List<PluginLoader>> shutdownTrigger)

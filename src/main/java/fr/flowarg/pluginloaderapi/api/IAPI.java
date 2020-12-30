@@ -18,8 +18,8 @@ public interface IAPI extends JsonSerializable
         return result.toString();
     }
 
-    default Supplier<Object> subAPI()
+    default Supplier<IAPI> subAPI()
     {
-        return () -> null;
+        return DEFAULT;
     }
 }

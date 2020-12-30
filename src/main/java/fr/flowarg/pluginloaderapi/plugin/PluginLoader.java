@@ -80,56 +80,56 @@ public class PluginLoader implements JsonSerializable
             return;
         }
 
-        if(elements.length >= 7 && elements[6].getMethodName().equalsIgnoreCase("launchPlugin"))
+        for (StackTraceElement elem : elements)
         {
-            this.logger.err(String.format("'Loading plugins' is unavailable from your class (%s). Aborting request...", elements[2].getClassName()));
+            if(elem.getMethodName().equalsIgnoreCase("launchPlugin"))
+            {
+                this.logger.err("'Loading plugins' is unavailable from a launched plugin. Aborting request...");
+                return;
+            }
+        }
+
+        if(this.loaded)
+        {
+            this.logger.err("Already loaded ! Aborting request...");
             return;
         }
 
-        if (!this.loaded)
-        {
-            try
+        new Thread(() -> {
+            this.logger.info("Searching for plugins in : " + this.pluginsDir.getAbsolutePath() + ".");
+            final List<Runnable> launcher = new ArrayList<>();
+            for (File plugin : FileUtils.list(this.pluginsDir))
             {
-                this.logger.info("Searching for plugins in : " + this.pluginsDir.getCanonicalPath() + ".");
-            } catch (IOException e)
-            {
-                this.logger.printStackTrace(e);
-            }
-            new Thread(() -> {
-                final List<Runnable> launcher = new ArrayList<>();
-                for (File plugin : FileUtils.list(this.pluginsDir))
+                if (!plugin.isDirectory() && this.isValidExtension(plugin))
                 {
-                    if (!plugin.isDirectory() && this.isValidExtension(plugin))
+                    try
                     {
-                        try
+                        final JarFile jarFile = new JarFile(plugin, false, ZipFile.OPEN_READ);
+                        final ZipEntry entryManifest = jarFile.getEntry("manifest.json");
+                        if (entryManifest != null)
                         {
-                            final JarFile jarFile = new JarFile(plugin, false, ZipFile.OPEN_READ);
-                            final ZipEntry entryManifest = jarFile.getEntry("manifest.json");
-                            if (entryManifest != null)
-                            {
-                                this.toLoad++;
-                                launcher.add(() -> {
-                                    try
-                                    {
-                                        this.checkForUpdates(plugin);
-                                        this.launchPlugin(this.addPluginToClassLoader(jarFile, entryManifest, plugin), plugin);
-                                    } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException | IOException e)
-                                    {
-                                        this.logger.printStackTrace(e);
-                                    }
-                                });
-                            }
-                            else this.logger.warn("manifest.json not found in : " + plugin.getName() + '.');
-                        } catch (IOException e)
-                        {
-                            this.logger.printStackTrace(e);
+                            this.toLoad++;
+                            launcher.add(() -> {
+                                try
+                                {
+                                    this.checkForUpdates(plugin);
+                                    this.launchPlugin(this.addPluginToClassLoader(jarFile, entryManifest, plugin), plugin);
+                                } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException | IOException e)
+                                {
+                                    this.logger.printStackTrace(e);
+                                }
+                            });
                         }
+                        else this.logger.warn("manifest.json not found in : " + plugin.getName() + '.');
+                    } catch (IOException e)
+                    {
+                        this.logger.printStackTrace(e);
                     }
                 }
-                launcher.forEach(Runnable::run);
-                this.loaded = true;
-            }, this.name + " Plugin Loader Thread").start();
-        }
+            }
+            launcher.forEach(Runnable::run);
+            this.loaded = true;
+        }, this.name + " Plugin Loader Thread").start();
     }
 
     /**
@@ -139,32 +139,14 @@ public class PluginLoader implements JsonSerializable
      */
     private void checkForUpdates(File plugin) throws IOException
     {
-        final File dir = new File(plugin.getCanonicalPath().replace(".jar", ""));
-        boolean flag = true;
-        if (FileUtils.list(dir).length > 0)
+        final JarFile jarFile = new JarFile(plugin, false, ZipFile.OPEN_READ);
+        final ZipEntry entryUpdate = jarFile.getEntry("update.json");
+        if(entryUpdate != null)
         {
-            for (File file : FileUtils.list(dir))
-            {
-                if (file.getName().equals("update.json"))
-                {
-                    final String jsonUpdate = FileUtils.loadFile(file);
-                    this.downloadUpdate(jsonUpdate, plugin);
-                    flag = false;
-                }
-            }
+            final String jsonUpdate = this.getContentFromIS(jarFile.getInputStream(entryUpdate));
+            this.downloadUpdate(jsonUpdate, plugin);
         }
-        else
-        {
-            final JarFile jarFile = new JarFile(plugin, false, ZipFile.OPEN_READ);
-            final ZipEntry entryUpdate = jarFile.getEntry("update.json");
-            if(entryUpdate != null)
-            {
-                final String jsonUpdate = this.getContentFromIS(jarFile.getInputStream(entryUpdate));
-                this.downloadUpdate(jsonUpdate, plugin);
-                flag = false;
-            }
-        }
-        if (flag) this.logger.warn("No update.json found for: " + plugin.getName());
+        else this.logger.warn("No update.json found for: " + plugin.getName());
     }
 
     private void downloadUpdate(String jsonUpdate, final File plugin) throws IOException
@@ -207,7 +189,7 @@ public class PluginLoader implements JsonSerializable
         chargingPlugin.setDataPluginFolder(dataFolder);
         chargingPlugin.setVersion(manifest.getVersion());
         chargingPlugin.setApi(this.api);
-        chargingPlugin.setLogger(new PluginLogger(chargingPlugin.getPluginName(), this.logger.getPrefix()));
+        chargingPlugin.setLogger(new PluginLogger(chargingPlugin.getPluginName()));
         chargingPlugin.onStart();
         this.loadedPlugins.add(chargingPlugin);
     }

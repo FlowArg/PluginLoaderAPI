@@ -24,26 +24,32 @@ public abstract class Plugin implements JsonSerializable
     {
         return this.pluginFile;
     }
+
     public final File getDataPluginFolder()
     {
         return this.dataPluginFolder;
     }
+
     public final PluginLoader getPluginLoader()
     {
         return this.pluginLoader;
     }
+
     public final String getPluginName()
     {
         return this.pluginName;
     }
+
     public final String getVersion()
     {
         return this.version;
     }
+
     public final PluginLogger getLogger()
     {
         return this.logger;
     }
+
     public final IAPI getApi()
     {
         return this.api;
@@ -53,28 +59,34 @@ public abstract class Plugin implements JsonSerializable
     {
         this.pluginFile = pluginFile;
     }
+
     final void setDataPluginFolder(File dataPluginFolder)
     {
         this.dataPluginFolder = dataPluginFolder;
         if(!this.dataPluginFolder.exists())
             this.dataPluginFolder.mkdirs();
     }
+
     final void setPluginLoader(PluginLoader pluginLoader)
     {
         this.pluginLoader = pluginLoader;
     }
+
     final void setPluginName(String pluginName)
     {
         this.pluginName = pluginName;
     }
+
     final void setVersion(String version)
     {
         this.version = version;
     }
+
     final void setLogger(PluginLogger logger)
     {
         this.logger = logger;
     }
+
     final void setApi(IAPI api)
     {
         this.api = api;
