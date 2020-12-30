@@ -20,7 +20,7 @@ public class PluginLogger extends Logger
     {
         final String date = String.format("[%s] ", this.formatDate(new Date()));
         final String msg = date + this.getPrefix() + this.plPrefix + (err ? "[ERROR]: " : "[INFO]: ") + toWrite;
-        if (err) System.out.println(EnumLogColor.RED.getColor() + msg + EnumLogColor.RESET.getColor());
+        if (err) System.out.println(EnumLogColor.RED + msg + EnumLogColor.RESET);
         else System.out.println(msg);
         this.writeToTheLogFile(msg);
     }
@@ -30,7 +30,7 @@ public class PluginLogger extends Logger
     {
         final String date = String.format("[%s] ",this.formatDate(new Date()));
         final String msg = date + this.getPrefix() + this.plPrefix + "[INFO]: " + toWrite;
-        final String colored = color.getColor() + msg + EnumLogColor.RESET.getColor();
+        final String colored = color + msg + EnumLogColor.RESET;
         System.out.println(colored);
         this.writeToTheLogFile(msg);
     }
@@ -40,7 +40,7 @@ public class PluginLogger extends Logger
     {
         final String date = String.format("[%s] ", this.formatDate(new Date()));
         final String msg = date + this.getPrefix() + this.plPrefix + "[WARN]: " + message;
-        final String warn = EnumLogColor.YELLOW.getColor() + msg + EnumLogColor.RESET.getColor();
+        final String warn = EnumLogColor.YELLOW + msg + EnumLogColor.RESET;
         System.out.println(warn);
         this.writeToTheLogFile(msg);
     }
@@ -50,7 +50,7 @@ public class PluginLogger extends Logger
     {
         final String date = String.format("[%s] ", this.formatDate(new Date()));
         final String msg = date + this.getPrefix() + this.plPrefix + "[DEBUG]: " + message;
-        final String colored = EnumLogColor.CYAN.getColor() + msg + EnumLogColor.RESET.getColor();
+        final String colored = EnumLogColor.CYAN + msg + EnumLogColor.RESET;
         System.out.println(colored);
         this.writeToTheLogFile(msg);
     }
