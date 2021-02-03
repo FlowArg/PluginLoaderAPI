@@ -157,7 +157,7 @@ public class PluginLoader implements JsonSerializable
             final String crc32Url = update.getCrc32Url();
             if (crc32Url != null && !crc32Url.trim().equals(""))
             {
-                if (this.getContentFromIS(new URL(update.getCrc32Url()).openStream()).equalsIgnoreCase(Long.toString(FileUtils.getCRC32(plugin))))
+                if (this.getContentFromIS(new URL(update.getCrc32Url()).openStream()).trim().equalsIgnoreCase(Long.toString(FileUtils.getCRC32(plugin))))
                     this.logger.info("No update found for: " + plugin.getName());
                 else
                 {
