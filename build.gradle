@@ -8,7 +8,7 @@ compileJava {
     options.encoding = 'UTF-8'
 }
 
-task sourcesJar(type: Jar, dependsOn: build) {
+task sourcesJar(type: Jar) {
     classifier 'sources'
     from sourceSets.main.allSource
 }
@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     implementation 'com.google.code.gson:gson:2.8.6'
-    implementation 'fr.flowarg:flowmultitools:1.2.+'
+    implementation 'fr.flowarg:flowmultitools:1.2.7'
 }
 
 artifacts {
