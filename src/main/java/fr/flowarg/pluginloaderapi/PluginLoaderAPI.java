@@ -8,6 +8,7 @@ import fr.flowarg.pluginloaderapi.api.LoggerActionType;
 import fr.flowarg.pluginloaderapi.api.Task;
 import fr.flowarg.pluginloaderapi.plugin.PluginLoader;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -21,9 +22,9 @@ import java.util.function.Predicate;
  * @version release-1.0.0
  *
  * Main class of the API, check
- * {@link PluginLoaderAPI#registerPluginLoader(PluginLoader)},
- * {@link PluginLoaderAPI#ready(Class)},
- * {@link PluginLoaderAPI#unregisterPluginLoader(PluginLoader)}
+ * @see PluginLoaderAPI#registerPluginLoader(PluginLoader)
+ * @see PluginLoaderAPI#ready(Class)
+ * @see PluginLoaderAPI#unregisterPluginLoader(PluginLoader)
  */
 public class PluginLoaderAPI
 {
@@ -37,7 +38,7 @@ public class PluginLoaderAPI
     private static final List<Class<?>> AWAIT_READY = new ArrayList<>();
     private static ILogger logger = new Logger("[PluginLoaderAPI]", null);
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().disableHtmlEscaping().create();
-    public static final Scanner SCANNER = new Scanner(System.in);
+    public static final Scanner SCANNER = new Scanner(System.in, StandardCharsets.UTF_8.name());
     private static final Predicate<List<PluginLoader>> DEFAULT_SHUTDOWN_TRIGGER = pluginLoaders -> SCANNER.nextLine().equalsIgnoreCase("stop");
     private static final List<Predicate<List<PluginLoader>>> SHUTDOWN_TRIGGERS = new ArrayList<>();
 

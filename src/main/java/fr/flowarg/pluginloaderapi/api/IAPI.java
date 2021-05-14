@@ -11,6 +11,7 @@ public interface IAPI extends JsonSerializable
 
     String getAPIName();
 
+    @Override
     default String toJson()
     {
         final JsonObject result = new JsonObject();

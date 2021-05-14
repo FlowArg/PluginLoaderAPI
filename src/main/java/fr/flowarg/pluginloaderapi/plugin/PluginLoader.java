@@ -14,6 +14,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -38,6 +39,8 @@ public class PluginLoader implements JsonSerializable
     private boolean loaded;
     /** Number of plugins to load. */
     private int toLoad;
+    /** PLA ClassLoader */
+    private URLClassLoader classLoader;
 
     public PluginLoader(String name, File pluginsDir, Class<?> registeredClass)
     {
@@ -157,36 +160,32 @@ public class PluginLoader implements JsonSerializable
             final String crc32Url = update.getCrc32Url();
             if (crc32Url != null && !crc32Url.trim().equals(""))
             {
-                if (this.getContentFromIS(new URL(update.getCrc32Url()).openStream()).trim().equalsIgnoreCase(Long.toString(FileUtils.getCRC32(plugin))))
+                final InputStream crc32URLStream = new URL(update.getCrc32Url()).openStream();
+
+                if (this.getContentFromIS(crc32URLStream).trim().equalsIgnoreCase(Long.toString(FileUtils.getCRC32(plugin))))
                     this.logger.info("No update found for: " + plugin.getName());
                 else
                 {
                     this.logger.info("Update found for: " + plugin.getName() + ", downloading it...");
-                    Files.copy(new URL(update.getJarUrl()).openStream(), plugin.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    final InputStream jarURLStream = new URL(update.getJarUrl()).openStream();
+                    Files.copy(jarURLStream, plugin.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    jarURLStream.close();
                 }
+                crc32URLStream.close();
             }
             else this.logger.err("Invalid update.json !! Skipping it...");
         }
         else this.logger.debug("Ignoring update checker for " + plugin.getName());
     }
 
-    private void launchPlugin(PluginManifest manifest, File plugin) throws ClassNotFoundException, IllegalAccessException, InstantiationException
+    private void launchPlugin(PluginManifest manifest, File plugin) throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException
     {
-        final Class<?> pluginClass = Class.forName(manifest.getPluginClass());
-        final Plugin chargingPlugin = (Plugin)pluginClass.newInstance();
+        final Class<?> pluginClass = Class.forName(manifest.getPluginClass(), true, this.classLoader);
+        final Plugin chargingPlugin = (Plugin)pluginClass.getDeclaredConstructor().newInstance();
         chargingPlugin.setPluginFile(plugin);
         chargingPlugin.setPluginLoader(this);
         chargingPlugin.setPluginName(manifest.getName());
-        File dataFolder;
-        try
-        {
-            dataFolder = new File(plugin.getCanonicalPath().replace(".jar", ""));
-        } catch (IOException e)
-        {
-            this.logger.err("Cannot use canonical path ! Using absolute path... " + plugin.getAbsolutePath());
-            dataFolder = new File(plugin.getAbsolutePath().replace(".jar", ""));
-        }
-        chargingPlugin.setDataPluginFolder(dataFolder);
+        chargingPlugin.setDataPluginFolder(new File(plugin.getAbsolutePath().replace(".jar", "")));
         chargingPlugin.setVersion(manifest.getVersion());
         chargingPlugin.setApi(this.api);
         chargingPlugin.setLogger(new PluginLogger(chargingPlugin.getPluginName()));
@@ -199,11 +198,19 @@ public class PluginLoader implements JsonSerializable
         final PluginManifest manifest = this.getPluginManifest(jarFile, entryManifest);
 
         this.logger.info(String.format("Charging plugin '%s' (%s) version %s in '%s' plugin loader on %s (%s).", manifest.getName(), manifest.getPluginClass(), manifest.getVersion(), this.name, Thread.currentThread().getName(), plugin.getName()));
-        final Class<URLClassLoader> classLoaderClass = URLClassLoader.class;
-        final URLClassLoader urlClassLoader = (URLClassLoader)ClassLoader.getSystemClassLoader();
-        final Method addURL = classLoaderClass.getDeclaredMethod("addURL", URL.class);
-        addURL.setAccessible(true);
-        addURL.invoke(urlClassLoader, plugin.toURI().toURL());
+
+        if(this.classLoader == null)
+            this.classLoader = new URLClassLoader(
+                    new URL[]{plugin.toURI().toURL()},
+                    ClassLoader.getSystemClassLoader()
+            );
+        else
+        {
+            final Method addURL = this.classLoader.getClass().getDeclaredMethod("addURL", URL.class);
+            addURL.setAccessible(true);
+            addURL.invoke(this.classLoader, plugin.toURI().toURL());
+        }
+
         return manifest;
     }
 
@@ -214,10 +221,13 @@ public class PluginLoader implements JsonSerializable
 
     private String getContentFromIS(InputStream inputStream) throws IOException
     {
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        final InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+        final BufferedReader reader = new BufferedReader(inputStreamReader);
         final StringBuilder sb = new StringBuilder();
         String line;
         while ((line = reader.readLine()) != null) sb.append(line);
+
+        inputStreamReader.close();
         return sb.toString();
     }
 

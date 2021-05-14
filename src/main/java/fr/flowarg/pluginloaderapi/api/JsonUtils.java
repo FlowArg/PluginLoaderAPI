@@ -5,7 +5,6 @@ import com.google.gson.JsonParser;
 import fr.flowarg.pluginloaderapi.plugin.Plugin;
 
 import java.io.File;
-import java.io.IOException;
 
 public class JsonUtils
 {
@@ -13,13 +12,7 @@ public class JsonUtils
     {
         final JsonObject result = new JsonObject();
         result.addProperty("name", file.getName());
-        try
-        {
-            result.addProperty("path", file.getCanonicalPath());
-        } catch (IOException e)
-        {
-            result.addProperty("path", file.getAbsolutePath());
-        }
+        result.addProperty("path", file.getAbsolutePath());
         return result;
     }
 
