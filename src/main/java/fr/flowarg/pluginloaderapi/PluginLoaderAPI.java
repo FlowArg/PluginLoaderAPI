@@ -137,7 +137,10 @@ public class PluginLoaderAPI
 
     public static Task<Predicate<List<PluginLoader>>> addShutdownTrigger(Predicate<List<PluginLoader>> shutdownTrigger)
     {
-        return new Task<>(shutdownTrigger, () -> SHUTDOWN_TRIGGERS::add);
+        return new Task<>(shutdownTrigger, () -> (trigger) -> {
+            SHUTDOWN_TRIGGERS.add(trigger);
+            return true;
+        });
     }
 
     public static Task<Void> removeDefaultShutdownTrigger()

@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 
 import java.util.function.Supplier;
 
-@FunctionalInterface
 public interface IAPI extends JsonSerializable
 {
     Supplier<IAPI> DEFAULT = () -> () -> "default";

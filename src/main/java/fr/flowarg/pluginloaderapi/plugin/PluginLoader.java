@@ -228,6 +228,7 @@ public class PluginLoader implements JsonSerializable
         while ((line = reader.readLine()) != null) sb.append(line);
 
         inputStreamReader.close();
+        reader.close();
         return sb.toString();
     }
 
