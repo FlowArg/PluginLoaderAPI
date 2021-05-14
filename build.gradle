@@ -22,3 +22,39 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'fr.flowarg:flowmultitools:1.2.+'
 }
+
+artifacts {
+    archives sourcesJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact tasks.sourcesJar
+            
+            pom {
+                groupId = project.group
+                version = project.version
+                artifactId = project.name
+                name = project.name
+                description = 'A simple API for loading plugins on any java application.'
+                url = 'https://github.com/FlowArg/PluginLoaderAPI'
+
+                scm {
+                    connection = 'scm:git:git://github.com/FlowArg/PluginLoaderAPI.git'
+                    developerConnection = 'scm:git:ssh://github.com:FlowArg/PluginLoaderAPI.git'
+                    url = 'http://github.com/FlowArg/PluginLoaderAPI/tree/master'
+                }
+
+                developers {
+                    developer {
+                        id = 'flowarg'
+                        name = 'Flow Arg'
+                        email = 'coutureflorence3@gmail.com'
+                    }
+                }
+            }
+        }
+    }
+}
